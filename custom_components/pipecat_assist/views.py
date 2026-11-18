@@ -92,6 +92,9 @@ class PipecatAssistConfigView(HomeAssistantView):
         data["runner_offer_path"] = f"{PROXY_OFFER_PATH}{entry_query}"
         data["runner_offer_url"] = data["runner_offer_path"]
         data["ha_audio_streaming"] = bool(data.pop("browser_ws_path", None))
+        # Both carry the satellite token, which non-admin HA users must not see.
+        data.pop("esphome_ws_url", None)
+        data.pop("esphome_ws_path", None)
         return web.json_response(data)
 
 

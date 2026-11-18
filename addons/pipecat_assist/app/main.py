@@ -98,7 +98,7 @@ from app.audio_debug import (
     create_audio_debug_session,
     list_audio_recordings,
 )
-from app.api_auth import extract_token as _extract_token, is_authorized
+from app.api_auth import ApiAuthMiddleware, extract_token as _extract_token
 from app.esphome_provisioner import ESPHomeProvisioner
 from app.mcp_bridge import (
     CombinedMCPBridge,
@@ -542,12 +542,11 @@ def _normalize_inline_audio(audio: bytes, media_type: str) -> tuple[bytes, str, 
     return audio, media_type.split(";")[0] or "audio/wav", extension
 
 
-@app.middleware("http")
-async def protect_api(request: Request, call_next):
-    """Allow HA Core, Ingress and trusted networks; everyone else needs the shared token."""
+app.add_middleware(ApiAuthMiddleware, secret=lambda: STORE.load().satellite_shared_secret)
 
-    if not is_authorized(request, STORE.load().satellite_shared_secret):
-        return JSONResponse({"detail": "Unauthorized"}, status_code=401)
+
+@app.middleware("http")
+async def offer_errors(request: Request, call_next):
     try:
         return await call_next(request)
     except Exception as err:
@@ -1777,9 +1776,6 @@ async def _queue_stream_audio(queue, provider_task, chunk) -> None:
 async def api_stt_stream(websocket: WebSocket):
     """Streaming STT bridge for the classic Home Assistant Assist pipeline."""
 
-    if not is_authorized(websocket, STORE.load().satellite_shared_secret):
-        await websocket.close(code=1008)
-        return
     await websocket.accept()
     provider_task: asyncio.Task[str] | None = None
     provider_queue: asyncio.Queue[bytes | None] | None = None
