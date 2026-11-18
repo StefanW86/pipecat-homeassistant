@@ -5,3 +5,6 @@ configuration:
   log_level:
     name: Log level
     description: Application log level.
+  trusted_networks:
+    name: Trusted networks
+    description: Extra IPs or CIDR ranges (e.g. 192.168.1.10/32) allowed to use the API without the satellite token. Home Assistant and Ingress are always allowed. Leave empty unless needed.

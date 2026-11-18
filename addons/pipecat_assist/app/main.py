@@ -98,6 +98,7 @@ from app.audio_debug import (
     create_audio_debug_session,
     list_audio_recordings,
 )
+from app.api_auth import extract_token as _extract_token, is_authorized
 from app.esphome_provisioner import ESPHomeProvisioner
 from app.mcp_bridge import (
     CombinedMCPBridge,
@@ -214,13 +215,6 @@ def _configure_logging() -> None:
     config = STORE.load()
     logger.remove()
     logger.add(lambda message: print(message, end=""), level=config.log_level)
-
-
-def _extract_token(request: Request) -> str:
-    auth = request.headers.get("authorization", "")
-    if auth.lower().startswith("bearer "):
-        return auth[7:].strip()
-    return request.query_params.get("token", "")
 
 
 def _is_offer_path(path: str) -> bool:
@@ -549,13 +543,11 @@ def _normalize_inline_audio(audio: bytes, media_type: str) -> tuple[bytes, str, 
 
 
 @app.middleware("http")
-async def protect_satellite_offer(request: Request, call_next):
-    """Require the shared satellite token for direct SmallWebRTC offers."""
+async def protect_api(request: Request, call_next):
+    """Allow HA Core, Ingress and trusted networks; everyone else needs the shared token."""
 
-    if _is_offer_path(request.url.path):
-        secret = STORE.load().satellite_shared_secret
-        if secret and not hmac.compare_digest(_extract_token(request), secret):
-            return JSONResponse({"detail": "Invalid satellite token"}, status_code=401)
+    if not is_authorized(request, STORE.load().satellite_shared_secret):
+        return JSONResponse({"detail": "Unauthorized"}, status_code=401)
     try:
         return await call_next(request)
     except Exception as err:
@@ -1785,6 +1777,9 @@ async def _queue_stream_audio(queue, provider_task, chunk) -> None:
 async def api_stt_stream(websocket: WebSocket):
     """Streaming STT bridge for the classic Home Assistant Assist pipeline."""
 
+    if not is_authorized(websocket, STORE.load().satellite_shared_secret):
+        await websocket.close(code=1008)
+        return
     await websocket.accept()
     provider_task: asyncio.Task[str] | None = None
     provider_queue: asyncio.Queue[bytes | None] | None = None

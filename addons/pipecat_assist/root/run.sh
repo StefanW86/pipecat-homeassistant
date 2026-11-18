@@ -10,6 +10,8 @@ export RUNNER_PORT
 export LOG_LEVEL
 GPT_LIVE_LAZY_CONNECT="$(bashio::config 'gpt_live_lazy_connect')"
 export GPT_LIVE_LAZY_CONNECT
+TRUSTED_NETWORKS="$(bashio::config 'trusted_networks')"
+export TRUSTED_NETWORKS
 
 ARGS=(--host "$RUNNER_HOST" --port "$RUNNER_PORT" -t webrtc)
 

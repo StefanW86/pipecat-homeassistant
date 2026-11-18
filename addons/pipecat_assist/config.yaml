@@ -20,7 +20,10 @@ options:
   runner_port: 7860
   log_level: "INFO"
   gpt_live_lazy_connect: true
+  trusted_networks: []
 schema:
   runner_port: port
   log_level: list(DEBUG|INFO|WARNING|ERROR)
   gpt_live_lazy_connect: bool
+  trusted_networks:
+    - str

@@ -5,3 +5,6 @@ configuration:
   log_level:
     name: Poziom logow
     description: Poziom logowania aplikacji.
+  trusted_networks:
+    name: Zaufane sieci
+    description: Dodatkowe adresy IP lub zakresy CIDR (np. 192.168.1.10/32) z dostepem do API bez tokenu satelity. Home Assistant i Ingress sa zawsze dozwolone. Zostaw puste, jesli niepotrzebne.
